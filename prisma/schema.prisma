@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int     @id @default(autoincrement())
+  name            String
+  username        String  @unique
+  email           String  @unique
+  followersCount  Int     @default(0)
+  followingsCount Int     @default(0)
+  password        String
+  novels          Novel[]
+
+  followings        Following[]       @relation("followersrel")
+  sameUser          Following[]       @relation("usersx")
+  followers         Follower[]        @relation("followingrel")
+  sameUserFollowing Follower[]        @relation("usersfollowinguser")
+  views             ChapterViews[]
+  likes             ChapterLikes[]
+  comments          ChapterComments[]
+
+  createdAt DateTime  @default(now()) @db.Timestamp()
+  updatedAt DateTime? @updatedAt
+}
+
+model Following {
+  id          Int      @id @default(autoincrement())
+  following   User     @relation("followersrel", fields: [followingId], references: [id])
+  followingId Int
+  user        User?    @relation("usersx", fields: [userId], references: [id])
+  userId      Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+}
+
+model Follower {
+  id         Int      @id @default(autoincrement())
+  follower   User     @relation("followingrel", fields: [followerId], references: [id])
+  followerId Int
+  user       User?    @relation("usersfollowinguser", fields: [userId], references: [id])
+  userId     Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+}
+
+model Novel {
+  id          Int     @id @default(autoincrement())
+  image       String
+  title       String
+  description String
+  content     String  @db.LongText
+  url         String?
+  likesCount  Int     @default(0)
+  viewsCount  Int     @default(0)
+
+  userId     Int
+  categoryId Int
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category        Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tags            NovelTags[]
+  chapters        Chapter[]
+  chapterViews    ChapterViews[]
+  chapterLikes    ChapterLikes[]
+  chapterComments ChapterComments[]
+
+  createdAt DateTime  @default(now()) @db.Timestamp()
+  updatedAt DateTime? @updatedAt
+}
+
+model Chapter {
+  id       Int               @id @default(autoincrement())
+  number   Int
+  title    String
+  novelId  Int
+  novel    Novel             @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  views    ChapterViews[]
+  likes    ChapterLikes[]
+  comments ChapterComments[]
+}
+
+model Category {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  novels Novel[]
+}
+
+model ChapterViews {
+  id Int @id @default(autoincrement())
+
+  userId    Int
+  novelId   Int
+  chapterId Int
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  novel   Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model ChapterLikes {
+  id        Int @id @default(autoincrement())
+  userId    Int
+  novelId   Int
+  chapterId Int
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  novel   Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model ChapterComments {
+  id      Int    @id @default(autoincrement())
+  comment String
+
+  userId    Int
+  novelId   Int
+  chapterId Int
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  novel     Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chapter   Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime  @default(now()) @db.Timestamp()
+  updatedAt DateTime? @updatedAt
+}
+
+model NovelTags {
+  id      Int    @id @default(autoincrement())
+  tag     String
+  novelId Int
+  novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
