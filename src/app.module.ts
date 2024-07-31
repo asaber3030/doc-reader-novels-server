@@ -8,7 +8,7 @@ import { ChaptersModule } from './chapters/chapters.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), 
+    ConfigModule.forRoot({ isGlobal: true }),
     UserModule, 
     AuthModule, 
     DatabaseModule, 
