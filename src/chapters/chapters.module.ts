@@ -6,6 +6,6 @@ import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   controllers: [ChaptersController],
-  providers: [ChaptersService, { provide: APP_GUARD, useClass: AuthGuard('jwt') }]
+  providers: [ChaptersService]
 })
 export class ChaptersModule {}

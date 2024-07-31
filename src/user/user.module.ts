@@ -6,7 +6,6 @@ import { UserService } from './user.service';
 
 @Module({
   providers: [
-    { provide: APP_GUARD, useClass: AuthGuard('jwt') },
     UserService
   ],
   controllers: [UserController]
