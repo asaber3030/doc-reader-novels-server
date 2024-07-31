@@ -5,6 +5,8 @@ import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import { NovelsModule } from './novels/novels.module';
 import { ChaptersModule } from './chapters/chapters.module';
+import { CatsController } from './cats/cats.controller';
+import { CatsModule } from './cats/cats.module';
 
 @Module({
   imports: [
@@ -13,8 +15,9 @@ import { ChaptersModule } from './chapters/chapters.module';
     AuthModule, 
     DatabaseModule, 
     NovelsModule, 
-    ChaptersModule
+    ChaptersModule, CatsModule
   ],
+  controllers: [CatsController]
 })
 
 export class AppModule {}
