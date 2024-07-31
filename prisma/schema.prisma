@@ -28,6 +28,8 @@ model User {
 
   createdAt DateTime? @db.Timestamp()
   updatedAt DateTime? @updatedAt
+
+  @@map("user")
 }
 
 model Following {
@@ -38,6 +40,8 @@ model Following {
   userId      Int?
   createdAt   DateTime?
   updatedAt   DateTime?
+
+  @@map("following")
 }
 
 model Follower {
@@ -48,6 +52,8 @@ model Follower {
   userId     Int?
   createdAt  DateTime?
   updatedAt  DateTime?
+
+  @@map("follower")
 }
 
 model Novel {
@@ -73,6 +79,8 @@ model Novel {
 
   createdAt DateTime? @db.Timestamp()
   updatedAt DateTime? @updatedAt
+
+  @@map("novel")
 }
 
 model Chapter {
@@ -84,12 +92,16 @@ model Chapter {
   views    ChapterViews[]
   likes    ChapterLikes[]
   comments ChapterComments[]
+
+  @@map("chapter")
 }
 
 model Category {
   id     Int     @id @default(autoincrement())
   name   String  @unique
   novels Novel[]
+
+  @@map("category")
 }
 
 model ChapterViews {
@@ -102,6 +114,8 @@ model ChapterViews {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   novel   Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("chapterViews")
 }
 
 model ChapterLikes {
@@ -113,6 +127,8 @@ model ChapterLikes {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   novel   Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("chapterLikes")
 }
 
 model ChapterComments {
@@ -128,6 +144,8 @@ model ChapterComments {
 
   createdAt DateTime? @db.Timestamp()
   updatedAt DateTime? @updatedAt
+
+  @@map("chapterComments")
 }
 
 model NovelTags {
@@ -135,4 +153,6 @@ model NovelTags {
   tag     String
   novelId Int
   novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("novelTags")
 }
