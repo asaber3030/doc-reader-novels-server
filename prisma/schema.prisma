@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_DEPLOY")
 }
 
 model User {
@@ -25,28 +25,28 @@ model User {
   likes             ChapterLikes[]
   comments          ChapterComments[]
 
-  createdAt DateTime  @default(now()) @db.Timestamp()
+  createdAt DateTime? @db.Timestamp()
   updatedAt DateTime? @updatedAt
 }
 
 model Following {
-  id          Int      @id @default(autoincrement())
-  following   User     @relation("followersrel", fields: [followingId], references: [id])
+  id          Int       @id @default(autoincrement())
+  following   User      @relation("followersrel", fields: [followingId], references: [id])
   followingId Int
-  user        User?    @relation("usersx", fields: [userId], references: [id])
+  user        User?     @relation("usersx", fields: [userId], references: [id])
   userId      Int?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now())
+  createdAt   DateTime?
+  updatedAt   DateTime?
 }
 
 model Follower {
-  id         Int      @id @default(autoincrement())
-  follower   User     @relation("followingrel", fields: [followerId], references: [id])
+  id         Int       @id @default(autoincrement())
+  follower   User      @relation("followingrel", fields: [followerId], references: [id])
   followerId Int
-  user       User?    @relation("usersfollowinguser", fields: [userId], references: [id])
+  user       User?     @relation("usersfollowinguser", fields: [userId], references: [id])
   userId     Int?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now())
+  createdAt  DateTime?
+  updatedAt  DateTime?
 }
 
 model Novel {
@@ -70,7 +70,7 @@ model Novel {
   chapterLikes    ChapterLikes[]
   chapterComments ChapterComments[]
 
-  createdAt DateTime  @default(now()) @db.Timestamp()
+  createdAt DateTime? @db.Timestamp()
   updatedAt DateTime? @updatedAt
 }
 
@@ -125,7 +125,7 @@ model ChapterComments {
   novel     Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chapter   Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  createdAt DateTime  @default(now()) @db.Timestamp()
+  createdAt DateTime? @db.Timestamp()
   updatedAt DateTime? @updatedAt
 }
 
