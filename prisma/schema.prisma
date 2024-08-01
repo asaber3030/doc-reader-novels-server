@@ -25,6 +25,7 @@ model User {
   views             ChapterViews[]
   likes             ChapterLikes[]
   comments          ChapterComments[]
+  posts             Post[]
 
   createdAt DateTime? @db.Timestamp()
   updatedAt DateTime? @updatedAt
@@ -155,4 +156,17 @@ model NovelTags {
   novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("novelTags")
+}
+
+model Post {
+  id      Int    @id @default(autoincrement())
+  content String @db.LongText
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime? @db.Timestamp()
+  updatedAt DateTime? @updatedAt
+
+  @@map("post")
 }

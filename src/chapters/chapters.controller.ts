@@ -1,10 +1,13 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { ChaptersService } from './chapters.service';
 import { CreateCommentDto, UpdateChapterDto, UpdateCommentDto } from './dto';
 import { Request } from 'express';
 import { User } from '@prisma/client';
+import { AuthGuard } from '@nestjs/passport';
+
 
 @Controller('chapters')
+@UseGuards(AuthGuard('jwt'))
 export class ChaptersController {
   constructor(private service: ChaptersService) {}
   

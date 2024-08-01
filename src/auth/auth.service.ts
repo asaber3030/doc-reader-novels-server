@@ -1,11 +1,14 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { DatabaseService } from 'src/database/database.service';
-import { LoginDto, RegisterDto } from './dto';
-import { JwtService } from '@nestjs/jwt';
-
 import * as bcrypt from 'bcryptjs'
+
 import { User } from '@prisma/client';
+
+import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { DatabaseService } from 'src/database/database.service';
+
+import { ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
+
+import { LoginDto, RegisterDto } from './dto';
 
 @Injectable()
 export class AuthService {
@@ -17,30 +20,38 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto) {
-    const userExists = await this.db.user.findUnique({ where: { email: dto.email } })
-    if (!userExists) throw new ForbiddenException("Credientials Incorrect")
+    const user = await this.db.user.findUnique({ 
+      where: { 
+        email: dto.email
+      }
+    })
+    if (!user) throw new ForbiddenException("هذا المستخدم غير متواجد.")
 
-    const comparePasswords = await bcrypt.compare(dto.password, userExists.password)
-    if (!comparePasswords) throw new ForbiddenException("Credientials Incorrect.")
+    const comparePasswords = await bcrypt.compare(dto.password, user.password)
+    if (!comparePasswords) throw new ForbiddenException("هذا المستخدم غير متواجد..")
 
-    const token = await this.signToken(userExists)
+    const token = await this.signToken(user)
+    const { password, ...main } = user
 
-    return { message: "User Loggedin Successfully.", statusCode: 201, data: { token } }
+    return { message: "تم تسجيل الدخول بنجاح", statusCode: 201, data: { main, token } }
   }
 
   async register(dto: RegisterDto) {
     const hashed = await bcrypt.hash(dto.password, 10)
    
-    const userExists = await this.db.user.findUnique({ where: { email: dto.email } })
-    if (userExists) throw new ConflictException("E-mail already exists.")
+    const emailExists = await this.db.user.findUnique({ where: { email: dto.email } })
+    if (emailExists) throw new ConflictException("البريد الالكتروني متواجد.")
    
+    const usernameExists = await this.db.user.findUnique({ where: { username: dto.username } })
+    if (usernameExists) throw new ConflictException("اسم المستخدم متواجد.")
+
     const user = await this.db.user.create({
-      data: { ...dto, password: hashed }
+      data: { ...dto, password: hashed, createdAt: new Date() }
     })
 
     const { password, ...rest } = user
     
-    return { message: "User Registered Successfully.", statusCode: 201, data: rest }
+    return { message: "تم تسجيل مستخدم جديد بنجاح!", statusCode: 201, data: rest }
   }
 
   async signToken(data: User): Promise<string> {

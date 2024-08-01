@@ -1,8 +1,10 @@
-import { Body, Controller, DefaultValuePipe, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, DefaultValuePipe, Delete, Get, Param, ParseBoolPipe, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { NovelsService } from './novels.service';
 import { CreateChapterDto } from 'src/chapters/dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('novels')
+@UseGuards(AuthGuard('jwt'))
 export class NovelsController {
   constructor(private novelsService: NovelsService) {}
 
