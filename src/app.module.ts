@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { NovelsModule } from './novels/novels.module';
 import { ChaptersModule } from './chapters/chapters.module';
+import { PostsModule } from './posts/posts.module';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { ChaptersModule } from './chapters/chapters.module';
     AuthModule, 
     DatabaseModule, 
     NovelsModule, 
-    ChaptersModule
+    ChaptersModule, PostsModule
   ]
 })
 

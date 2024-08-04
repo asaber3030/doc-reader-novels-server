@@ -1,12 +1,103 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { CreateNovelDto, UpdateNovelDto } from './dto/novels.dto';
+import { FollowDto, UpdateUserDto } from './dto/user.dto';
 import { User } from '@prisma/client';
 import { DatabaseService } from 'src/database/database.service';
-import { CreateNovelDto, UpdateNovelDto } from './dto/novels.dto';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { createPagination } from 'utils/pagination';
+import { PaginationType } from 'types';
 
 @Injectable()
 export class UserService {
 
-  constructor(private db: DatabaseService) {}
+  constructor(
+    private db: DatabaseService,
+    private jwt: JwtService,
+    private config: ConfigService
+  ) {}
+  
+  async allUsers({ searchParam, pageParam, skipLimitParam, limitParam, orderByParam, orderTypeParam }: PaginationType) {
+    
+    const { skip, limit, orderBy, orderType } = createPagination(
+      pageParam, 
+      limitParam, 
+      orderByParam, 
+      orderTypeParam, 
+      skipLimitParam
+    )
+    
+    const users = await this.db.user.findMany({
+      orderBy: { [orderBy]: orderType },
+      where: {
+        name: { contains: searchParam },
+        username: { contains: searchParam },
+        email: { contains: searchParam },
+      },
+      take: skipLimitParam ? undefined : limit,
+      skip,
+    })
+
+    return {
+      message: "Novel Data",
+      statusCode: 200,
+      data: users
+    }
+  }
+
+  async updateMe(userId: number, data: UpdateUserDto) {
+    const isUsernameAvailable = await this.db.user.findUnique({
+      where: { 
+        username: data.username,
+        AND: [
+          { id: { not: userId } }
+        ]
+      }
+    })
+
+    if (isUsernameAvailable) throw new ConflictException("اسم المستخدم متواجد بالفعل.")
+
+    const isEmailAvailable = await this.db.user.findUnique({
+      where: { 
+        email: data.email,
+        AND: [
+          { id: { not: userId } }
+        ]
+      }
+    })
+
+    if (isEmailAvailable) throw new ConflictException("البريد الالكتروني متواجد بالفعل.")
+
+    const updatedUser = await this.db.user.update({
+      where: { id: userId },
+      data
+    })
+
+    const { password, ...user } = updatedUser
+
+    const refreshToken = await this.signToken(updatedUser)
+
+    return {
+      message: "تم تعديل البيانات بنجاح",
+      data: {
+        user,
+        refreshToken
+      },
+      statusCode: 200
+    }
+  }
+
+  async signToken(data: User): Promise<string> {
+    const payload = {
+      sub: data.id,
+      ...data
+    }
+    const { password, ...withoutPassword } = payload
+    return this.jwt.signAsync(withoutPassword, {
+      expiresIn: "30d",
+      secret: this.config.get('USER_SECERT')
+    })
+  }
 
   async userNovels(user: User) {
     const novels = await this.db.novel.findMany({
@@ -16,6 +107,101 @@ export class UserService {
       statusCode: 200,
       message: "User Novels",
       data: novels
+    }
+  }
+
+  async follow(currentUser: User, data: FollowDto) {
+
+    const user = await this.db.user.findUnique({ where: { id: data.userId }, select: { id: true, followersCount: true, followingsCount: true } })
+    if (!user) throw new NotFoundException("المستخدم الذي تحاول متابعته غير متواجد")
+
+    const current = await this.db.user.findUnique({
+      where: { id: currentUser.id }
+    })
+
+    const checkIfFollowers = await this.db.follower.findFirst({
+      where: {
+        userId: data.userId,
+        followerId: currentUser.id
+      }
+    })
+    if (checkIfFollowers) throw new ConflictException("لا يمكنك متابعته مره اخرى")
+
+    const newFollower = await this.db.follower.create({
+      data: {
+        userId: user.id,
+        followerId: currentUser.id,
+        createdAt: new Date(),
+      }
+    })
+
+    const newFollowing = await this.db.following.create({
+      data: {
+        userId: currentUser.id,
+        followingId: user.id,
+        createdAt: new Date(),
+      }
+    })
+
+    await this.db.user.update({
+      where: { id: currentUser.id },
+      data: { followingsCount: current.followingsCount + 1 }
+    })
+
+    await this.db.user.update({
+      where: { id: user.id },
+      data: { followersCount: user.followersCount + 1 }
+    })
+
+    return {
+      message: "Followed",
+      status: 201
+    }
+  }
+
+  async unfollow(currentUser: User, data: FollowDto) {
+    const user = await this.db.user.findUnique({ where: { id: data.userId }, select: { id: true, followersCount: true, followingsCount: true } })
+    if (!user) throw new NotFoundException("المستخدم الذي تحاول ان تزيل متابعتك له لم يعد موجود.")
+
+    const current = await this.db.user.findUnique({
+      where: { id: currentUser.id }
+    })
+
+    const checkIfFollowing = await this.db.following.findFirst({
+      where: {
+        userId: current.id,
+        followingId: user.id
+      }
+    })
+    if (!checkIfFollowing) throw new ConflictException("انت لست تتابع هذا المستخدم.")
+
+    const removeFollower = await this.db.follower.deleteMany({
+      where: {
+        followerId: current.id,
+        userId: user.id
+      },
+    })
+
+    const removeFollowing = await this.db.following.deleteMany({
+      where: {
+        userId: currentUser.id,
+        followingId: user.id,
+      }
+    })
+
+    await this.db.user.update({
+      where: { id: currentUser.id },
+      data: { followingsCount: current.followingsCount - 1 === 0 ? 0 : current.followingsCount - 1 }
+    })
+
+    await this.db.user.update({
+      where: { id: user.id },
+      data: { followersCount: user.followersCount - 1 === 0 ? 0 : user.followersCount - 1 }
+    })
+
+    return {
+      message: "Unfollowed",
+      status: 201
     }
   }
 
