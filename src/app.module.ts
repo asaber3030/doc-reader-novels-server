@@ -6,13 +6,13 @@ import { DatabaseModule } from './database/database.module';
 import { NovelsModule } from './novels/novels.module';
 import { ChaptersModule } from './chapters/chapters.module';
 import { PostsModule } from './posts/posts.module';
-import { TestModule } from './test/test.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 import { UploadsModule } from './uploads/uploads.module';
-import { ProjectsModule } from './projects/projects.module';
+import { AppController } from './app.controller';
+import { join } from 'path';
 
 @Module({
+  controllers: [AppController],
   imports: [
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
@@ -24,9 +24,7 @@ import { ProjectsModule } from './projects/projects.module';
     NovelsModule,
     ChaptersModule,
     PostsModule,
-    TestModule,
     UploadsModule,
-    ProjectsModule,
   ],
 })
 export class AppModule {}

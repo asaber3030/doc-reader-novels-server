@@ -1,9 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
 
-@Controller('app')
+@Controller()
 export class AppController {
   @Get()
   async get() {
-    return { message: 'Doc Reader - Novels API', statusCode: 200 };
+    return { message: 'DocReader Novels API', statusCode: 200 };
   }
 }
