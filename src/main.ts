@@ -7,9 +7,9 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       stopAtFirstError: true,
-      whitelist: true
-    })
-  )
-  await app.listen(8080);
+      whitelist: true,
+    }),
+  );
+  await app.listen(3000);
 }
 bootstrap();

@@ -10,13 +10,15 @@ import { TestModule } from './test/test.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { UploadsModule } from './uploads/uploads.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
     /*  ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
     }),
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true }), */
+    /*  
     UserModule, 
     AuthModule, 
     DatabaseModule, 
@@ -25,6 +27,7 @@ import { UploadsModule } from './uploads/uploads.module';
     PostsModule, 
     TestModule,
     UploadsModule, */
+    ProjectsModule,
   ],
 })
 export class AppModule {}
