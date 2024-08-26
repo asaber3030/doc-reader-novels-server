@@ -14,19 +14,18 @@ import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
-    /*  ServeStaticModule.forRoot({
+    ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
     }),
-    ConfigModule.forRoot({ isGlobal: true }), */
-    /*  
-    UserModule, 
-    AuthModule, 
-    DatabaseModule, 
-    NovelsModule, 
-    ChaptersModule, 
-    PostsModule, 
+    ConfigModule.forRoot({ isGlobal: true }),
+    UserModule,
+    AuthModule,
+    DatabaseModule,
+    NovelsModule,
+    ChaptersModule,
+    PostsModule,
     TestModule,
-    UploadsModule, */
+    UploadsModule,
     ProjectsModule,
   ],
 })
