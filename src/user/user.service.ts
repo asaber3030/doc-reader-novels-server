@@ -1,275 +1,280 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreateNovelDto, UpdateNovelDto } from './dto/novels.dto';
 import { FollowDto, UpdateUserDto } from './dto/user.dto';
 import { User } from '@prisma/client';
 import { DatabaseService } from 'src/database/database.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { createPagination } from 'utils/pagination';
 import { PaginationType } from 'types';
 
 @Injectable()
 export class UserService {
-
   constructor(
     private db: DatabaseService,
     private jwt: JwtService,
-    private config: ConfigService
+    private config: ConfigService,
   ) {}
-  
-  async allUsers({ searchParam, pageParam, skipLimitParam, limitParam, orderByParam, orderTypeParam }: PaginationType) {
-    
-    const { skip, limit, orderBy, orderType } = createPagination(
-      pageParam, 
-      limitParam, 
-      orderByParam, 
-      orderTypeParam, 
-      skipLimitParam
-    )
-    
-    const users = await this.db.user.findMany({
-      orderBy: { [orderBy]: orderType },
-      where: {
-        name: { contains: searchParam },
-        username: { contains: searchParam },
-        email: { contains: searchParam },
-      },
-      take: skipLimitParam ? undefined : limit,
-      skip,
-    })
+
+  async allUsers({
+    searchParam,
+    pageParam,
+    skipLimitParam,
+    limitParam,
+    orderByParam,
+    orderTypeParam,
+  }: PaginationType) {
+    const users = await this.db.user.findMany({});
 
     return {
-      message: "Novel Data",
+      message: 'Novel Data',
       statusCode: 200,
-      data: users
-    }
+      data: users,
+    };
   }
 
   async updateMe(userId: number, data: UpdateUserDto) {
     const isUsernameAvailable = await this.db.user.findUnique({
-      where: { 
+      where: {
         username: data.username,
-        AND: [
-          { id: { not: userId } }
-        ]
-      }
-    })
+        AND: [{ id: { not: userId } }],
+      },
+    });
 
-    if (isUsernameAvailable) throw new ConflictException("اسم المستخدم متواجد بالفعل.")
+    if (isUsernameAvailable)
+      throw new ConflictException('اسم المستخدم متواجد بالفعل.');
 
     const isEmailAvailable = await this.db.user.findUnique({
-      where: { 
+      where: {
         email: data.email,
-        AND: [
-          { id: { not: userId } }
-        ]
-      }
-    })
+        AND: [{ id: { not: userId } }],
+      },
+    });
 
-    if (isEmailAvailable) throw new ConflictException("البريد الالكتروني متواجد بالفعل.")
+    if (isEmailAvailable)
+      throw new ConflictException('البريد الالكتروني متواجد بالفعل.');
 
     const updatedUser = await this.db.user.update({
       where: { id: userId },
-      data
-    })
+      data,
+    });
 
-    const { password, ...user } = updatedUser
+    const { password, ...user } = updatedUser;
 
-    const refreshToken = await this.signToken(updatedUser)
+    const refreshToken = await this.signToken(updatedUser);
 
     return {
-      message: "تم تعديل البيانات بنجاح",
+      message: 'تم تعديل البيانات بنجاح',
       data: {
         user,
-        refreshToken
+        refreshToken,
       },
-      statusCode: 200
-    }
+      statusCode: 200,
+    };
   }
 
   async signToken(data: User): Promise<string> {
     const payload = {
       sub: data.id,
-      ...data
-    }
-    const { password, ...withoutPassword } = payload
+      ...data,
+    };
+    const { password, ...withoutPassword } = payload;
     return this.jwt.signAsync(withoutPassword, {
-      expiresIn: "30d",
-      secret: this.config.get('USER_SECERT')
-    })
+      expiresIn: '30d',
+      secret: this.config.get('USER_SECERT'),
+    });
   }
 
   async userNovels(user: User) {
     const novels = await this.db.novel.findMany({
-      where: { userId: user.id }
-    })
+      where: { userId: user.id },
+    });
     return {
       statusCode: 200,
-      message: "User Novels",
-      data: novels
-    }
+      message: 'User Novels',
+      data: novels,
+    };
   }
 
   async follow(currentUser: User, data: FollowDto) {
-
-    const user = await this.db.user.findUnique({ where: { id: data.userId }, select: { id: true, followersCount: true, followingsCount: true } })
-    if (!user) throw new NotFoundException("المستخدم الذي تحاول متابعته غير متواجد")
+    const user = await this.db.user.findUnique({
+      where: { id: data.userId },
+      select: { id: true, followersCount: true, followingsCount: true },
+    });
+    if (!user)
+      throw new NotFoundException('المستخدم الذي تحاول متابعته غير متواجد');
 
     const current = await this.db.user.findUnique({
-      where: { id: currentUser.id }
-    })
+      where: { id: currentUser.id },
+    });
 
     const checkIfFollowers = await this.db.follower.findFirst({
       where: {
         userId: data.userId,
-        followerId: currentUser.id
-      }
-    })
-    if (checkIfFollowers) throw new ConflictException("لا يمكنك متابعته مره اخرى")
+        followerId: currentUser.id,
+      },
+    });
+    if (checkIfFollowers)
+      throw new ConflictException('لا يمكنك متابعته مره اخرى');
 
     const newFollower = await this.db.follower.create({
       data: {
         userId: user.id,
         followerId: currentUser.id,
         createdAt: new Date(),
-      }
-    })
+      },
+    });
 
     const newFollowing = await this.db.following.create({
       data: {
         userId: currentUser.id,
         followingId: user.id,
         createdAt: new Date(),
-      }
-    })
+      },
+    });
 
     await this.db.user.update({
       where: { id: currentUser.id },
-      data: { followingsCount: current.followingsCount + 1 }
-    })
+      data: { followingsCount: current.followingsCount + 1 },
+    });
 
     await this.db.user.update({
       where: { id: user.id },
-      data: { followersCount: user.followersCount + 1 }
-    })
+      data: { followersCount: user.followersCount + 1 },
+    });
 
     return {
-      message: "Followed",
-      status: 201
-    }
+      message: 'Followed',
+      status: 201,
+    };
   }
 
   async unfollow(currentUser: User, data: FollowDto) {
-    const user = await this.db.user.findUnique({ where: { id: data.userId }, select: { id: true, followersCount: true, followingsCount: true } })
-    if (!user) throw new NotFoundException("المستخدم الذي تحاول ان تزيل متابعتك له لم يعد موجود.")
+    const user = await this.db.user.findUnique({
+      where: { id: data.userId },
+      select: { id: true, followersCount: true, followingsCount: true },
+    });
+    if (!user)
+      throw new NotFoundException(
+        'المستخدم الذي تحاول ان تزيل متابعتك له لم يعد موجود.',
+      );
 
     const current = await this.db.user.findUnique({
-      where: { id: currentUser.id }
-    })
+      where: { id: currentUser.id },
+    });
 
     const checkIfFollowing = await this.db.following.findFirst({
       where: {
         userId: current.id,
-        followingId: user.id
-      }
-    })
-    if (!checkIfFollowing) throw new ConflictException("انت لست تتابع هذا المستخدم.")
+        followingId: user.id,
+      },
+    });
+    if (!checkIfFollowing)
+      throw new ConflictException('انت لست تتابع هذا المستخدم.');
 
     const removeFollower = await this.db.follower.deleteMany({
       where: {
         followerId: current.id,
-        userId: user.id
+        userId: user.id,
       },
-    })
+    });
 
     const removeFollowing = await this.db.following.deleteMany({
       where: {
         userId: currentUser.id,
         followingId: user.id,
-      }
-    })
+      },
+    });
 
     await this.db.user.update({
       where: { id: currentUser.id },
-      data: { followingsCount: current.followingsCount - 1 === 0 ? 0 : current.followingsCount - 1 }
-    })
+      data: {
+        followingsCount:
+          current.followingsCount - 1 === 0 ? 0 : current.followingsCount - 1,
+      },
+    });
 
     await this.db.user.update({
       where: { id: user.id },
-      data: { followersCount: user.followersCount - 1 === 0 ? 0 : user.followersCount - 1 }
-    })
+      data: {
+        followersCount:
+          user.followersCount - 1 === 0 ? 0 : user.followersCount - 1,
+      },
+    });
 
     return {
-      message: "Unfollowed",
-      status: 201
-    }
+      message: 'Unfollowed',
+      status: 201,
+    };
   }
 
   async getNovel(id: number) {
     const novel = await this.db.novel.findUnique({
       where: { id },
-      include: { category: true }
-    })
-    if (!novel) throw new NotFoundException("هذه الرواية غير موجوده")
+      include: { category: true },
+    });
+    if (!novel) throw new NotFoundException('هذه الرواية غير موجوده');
     return {
       statusCode: 200,
-      message: "User Novels",
-      data: novel
-    }
+      message: 'User Novels',
+      data: novel,
+    };
   }
 
   async createNovel(userId: number, dto: CreateNovelDto) {
     const findCategory = await this.db.category.findUnique({
-      where: { id: dto.categoryId }
-    })
-    if (!findCategory) throw new NotFoundException("هذه القسم غير متواجد!")
+      where: { id: dto.categoryId },
+    });
+    if (!findCategory) throw new NotFoundException('هذه القسم غير متواجد!');
 
     const newNovel = await this.db.novel.create({
-      data: { ...dto, userId }
-    })
+      data: { ...dto, userId },
+    });
 
     return {
       statusCode: 201,
-      message: "تم اضافة رواية جديده!",
-      data: newNovel
-    }
+      message: 'تم اضافة رواية جديده!',
+      data: newNovel,
+    };
   }
 
   async updateNovel(userId: number, novelId: number, dto: UpdateNovelDto) {
-    
     const novel = await this.db.novel.findUnique({
-      where: { id: novelId }
-    })
+      where: { id: novelId },
+    });
 
-    if (!novel) throw new NotFoundException("هذه الرواية غير موجوده")
+    if (!novel) throw new NotFoundException('هذه الرواية غير موجوده');
     if (novel.userId !== userId) throw new UnauthorizedException();
 
-    const updatedNovel = await this.db.novel.update({ 
+    const updatedNovel = await this.db.novel.update({
       where: { id: novelId },
-      data: dto
-    })
+      data: dto,
+    });
 
     return {
       statusCode: 200,
-      message: "تم تعديل الرواية.",
-      data: updatedNovel
-    }
+      message: 'تم تعديل الرواية.',
+      data: updatedNovel,
+    };
   }
 
   async deleteNovel(userId: number, novelId: number) {
     const novel = await this.db.novel.findUnique({
-      where: { id: novelId }
-    })
-    if (!novel) throw new NotFoundException("هذه الرواية غير موجوده")
+      where: { id: novelId },
+    });
+    if (!novel) throw new NotFoundException('هذه الرواية غير موجوده');
     if (novel.userId !== userId) throw new UnauthorizedException();
 
-    const deletedNovel = await this.db.novel.delete({ where: { id: novelId } })
+    const deletedNovel = await this.db.novel.delete({ where: { id: novelId } });
 
     return {
       statusCode: 200,
-      message: "تم مسح الرواية.",
-      data: deletedNovel
-    }
+      message: 'تم مسح الرواية.',
+      data: deletedNovel,
+    };
   }
-  
 }
