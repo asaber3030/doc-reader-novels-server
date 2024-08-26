@@ -30,7 +30,7 @@ model User {
   createdAt DateTime? @db.Timestamp()
   updatedAt DateTime? @updatedAt
 
-  @@map("user")
+  @@map("users")
 }
 
 model Following {
@@ -42,7 +42,7 @@ model Following {
   createdAt   DateTime?
   updatedAt   DateTime?
 
-  @@map("following")
+  @@map("followings")
 }
 
 model Follower {
@@ -54,7 +54,7 @@ model Follower {
   createdAt  DateTime?
   updatedAt  DateTime?
 
-  @@map("follower")
+  @@map("followers")
 }
 
 model Novel {
@@ -81,7 +81,7 @@ model Novel {
   createdAt DateTime? @db.Timestamp()
   updatedAt DateTime? @updatedAt
 
-  @@map("novel")
+  @@map("novels")
 }
 
 model Chapter {
@@ -102,7 +102,7 @@ model Category {
   name   String  @unique
   novels Novel[]
 
-  @@map("category")
+  @@map("categories")
 }
 
 model ChapterViews {
@@ -116,7 +116,7 @@ model ChapterViews {
   novel   Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  @@map("chapterViews")
+  @@map("chapter_views")
 }
 
 model ChapterLikes {
@@ -129,7 +129,7 @@ model ChapterLikes {
   novel   Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  @@map("chapterLikes")
+  @@map("chapter_likes")
 }
 
 model ChapterComments {
@@ -146,7 +146,7 @@ model ChapterComments {
   createdAt DateTime? @db.Timestamp()
   updatedAt DateTime? @updatedAt
 
-  @@map("chapterComments")
+  @@map("chapter_comments")
 }
 
 model NovelTags {
@@ -155,7 +155,7 @@ model NovelTags {
   novelId Int
   novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  @@map("novelTags")
+  @@map("novel_tags")
 }
 
 model Post {
@@ -168,5 +168,5 @@ model Post {
   createdAt DateTime? @db.Timestamp()
   updatedAt DateTime? @updatedAt
 
-  @@map("post")
+  @@map("posts")
 }
