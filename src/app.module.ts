@@ -13,7 +13,7 @@ import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
-    ServeStaticModule.forRoot({
+    /*  ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
     }),
     ConfigModule.forRoot({ isGlobal: true }),
@@ -24,8 +24,7 @@ import { UploadsModule } from './uploads/uploads.module';
     ChaptersModule, 
     PostsModule, 
     TestModule,
-    UploadsModule,
-  ]
+    UploadsModule, */
+  ],
 })
-
 export class AppModule {}
