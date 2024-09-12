@@ -2,6 +2,9 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// DATABASE_URL
+// DATABASE_DEPLOY
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_DEPLOY")
@@ -11,11 +14,12 @@ model User {
   id              Int     @id @default(autoincrement())
   counts          Int     @default(0)
   name            String
+  picture         String  @default("https://docreader-novels.vercel.app/default-user.svg")
   username        String  @unique
   email           String  @unique
   followersCount  Int     @default(0)
   followingsCount Int     @default(0)
-  password        String
+  password        String?
   novels          Novel[]
 
   followings        Following[]       @relation("followersrel")
@@ -26,11 +30,26 @@ model User {
   likes             ChapterLikes[]
   comments          ChapterComments[]
   posts             Post[]
+  favouriteNovels   FavouriteNovel[]
 
   createdAt DateTime? @db.Timestamp()
   updatedAt DateTime? @updatedAt
 
   @@map("users")
+}
+
+model FavouriteNovel {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  novelId Int
+
+  novel Novel @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime? @db.Timestamp()
+
+  @@map("favourite_novels")
 }
 
 model Following {
@@ -72,16 +91,27 @@ model Novel {
 
   user            User              @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   category        Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  tags            NovelTags[]
+  tags            NovelTag[]
   chapters        Chapter[]
   chapterViews    ChapterViews[]
   chapterLikes    ChapterLikes[]
   chapterComments ChapterComments[]
-
+  favouriteByUsers FavouriteNovel[]
+  
   createdAt DateTime? @db.Timestamp()
   updatedAt DateTime? @updatedAt
 
   @@map("novels")
+}
+
+model NovelTag {
+  id Int @id @default(autoincrement())
+
+  tag String
+  novelId Int
+  novel Novel @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("novel_tags")
 }
 
 model Chapter {
@@ -147,15 +177,6 @@ model ChapterComments {
   updatedAt DateTime? @updatedAt
 
   @@map("chapter_comments")
-}
-
-model NovelTags {
-  id      Int    @id @default(autoincrement())
-  tag     String
-  novelId Int
-  novel   Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@map("novel_tags")
 }
 
 model Post {
