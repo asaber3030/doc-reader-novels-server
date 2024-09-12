@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateChapterDto } from 'src/chapters/dto';
 import { DatabaseService } from 'src/database/database.service';
 import { PaginationType } from 'types';
-import { createPagination } from 'utils/pagination';
+import { createPagination } from '../../utils/pagination';
 
 @Injectable()
 export class NovelsService {
@@ -47,6 +47,11 @@ export class NovelsService {
       skipLimitParam,
     );
 
+    const totalNovels = await this.db.novel.count();
+    const totalPages = Math.ceil(totalNovels / limitParam);
+    const hasNextPage = pageParam < totalPages;
+    const hasPreviousPage = pageParam > 1;
+
     const novels = await this.db.novel.findMany({
       where: {
         title: {
@@ -62,6 +67,13 @@ export class NovelsService {
       message: 'Novel Data',
       statusCode: 200,
       data: novels,
+      pagination: {
+        totalPages,
+        totalNovels,
+        hasNextPage,
+        hasPreviousPage,
+        page: pageParam,
+      },
     };
   }
 
