@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateChapterDto } from 'src/chapters/dto';
 import { DatabaseService } from 'src/database/database.service';
 import { PaginationType } from 'types';
 import { createPagination } from '../../utils/pagination';
+import { novelsConfig } from './config';
+import { CreateManyNovelTagsDto, CreateNovelTagDto } from './dto';
 
 @Injectable()
 export class NovelsService {
@@ -11,10 +17,18 @@ export class NovelsService {
   async findNovel(novelId: number) {
     const novel = await this.db.novel.findUnique({
       where: { id: novelId },
-      include: { user: true, category: true, chapters: true },
+      include: {
+        user: { select: { name: true, username: true, id: true } },
+        category: true,
+        chapters: true,
+        tags: { select: { tag: true } },
+      },
     });
+
+    const tagArray = novel?.tags?.map((tag) => tag.tag);
+
     if (!novel) throw new NotFoundException('هذه الرواية غير متواجده.');
-    return { message: 'Novel Data', data: novel };
+    return { message: 'Novel Data', data: { ...novel, tags: tagArray } };
   }
 
   async findChapters(novelId: number) {
@@ -48,11 +62,12 @@ export class NovelsService {
     );
 
     const totalNovels = await this.db.novel.count();
-    const totalPages = Math.ceil(totalNovels / limitParam);
+    const totalPages = Math.ceil(totalNovels / limitParam ?? 10);
     const hasNextPage = pageParam < totalPages;
     const hasPreviousPage = pageParam > 1;
 
     const novels = await this.db.novel.findMany({
+      select: novelsConfig.select,
       where: {
         title: {
           contains: searchParam,
@@ -69,11 +84,29 @@ export class NovelsService {
       data: novels,
       pagination: {
         totalPages,
-        totalNovels,
         hasNextPage,
         hasPreviousPage,
         page: pageParam,
       },
+    };
+  }
+
+  async getMostPopularNovels({ searchParam, limitParam }: PaginationType) {
+    const novels = await this.db.novel.findMany({
+      select: novelsConfig.select,
+      where: {
+        title: {
+          contains: searchParam,
+        },
+      },
+      orderBy: { viewsCount: 'desc' },
+      take: limitParam ?? 10,
+    });
+
+    return {
+      message: 'Most Popular Novels Data',
+      statusCode: 200,
+      data: novels,
     };
   }
 
@@ -96,7 +129,13 @@ export class NovelsService {
       skipLimitParam,
     );
 
+    const totalNovels = await this.db.novel.count();
+    const totalPages = Math.ceil(totalNovels / limitParam ?? 10);
+    const hasNextPage = pageParam < totalPages;
+    const hasPreviousPage = pageParam > 1;
+
     const novels = await this.db.novel.findMany({
+      select: novelsConfig.select,
       where: {
         title: {
           contains: searchParam,
@@ -112,6 +151,12 @@ export class NovelsService {
       message: 'Novel Data',
       statusCode: 200,
       data: novels,
+      pagination: {
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+        page: pageParam,
+      },
     };
   }
 
@@ -127,6 +172,74 @@ export class NovelsService {
       message: 'تم اضافة فصل جديد.',
       statusCode: 201,
       data: newChapter,
+    };
+  }
+
+  async createNovelTag(novelId: number, createNovelTagDto: CreateNovelTagDto) {
+    const novel = await this.db.novel.findUnique({ where: { id: novelId } });
+    if (!novel) throw new NotFoundException('هذه الروايه غير موجوده');
+
+    const findTag = await this.db.novelTag.findFirst({
+      where: { tag: createNovelTagDto.tag, novelId },
+    });
+    if (findTag) throw new ConflictException('هذا التاج موجود من قبل.');
+
+    const newNovelTag = await this.db.novelTag.create({
+      data: { novelId, ...createNovelTagDto },
+    });
+
+    return {
+      message: 'تم اضافة تاج جديد.',
+      statusCode: 201,
+      data: newNovelTag,
+    };
+  }
+
+  async createManyNovelTags(
+    novelId: number,
+    createNovelTagDto: CreateManyNovelTagsDto,
+  ) {
+    const novel = await this.db.novel.findUnique({
+      where: { id: novelId },
+      select: { id: true },
+    });
+    if (!novel) throw new NotFoundException('هذه الروايه غير موجوده');
+
+    createNovelTagDto.tags.forEach(async (tag) => {
+      const findTag = await this.db.novelTag.findFirst({
+        where: { tag: tag.tag, novelId },
+      });
+      if (findTag)
+        throw new ConflictException(`${tag.tag} - هذا التاج موجود من قبل.`);
+
+      await this.db.novelTag.create({
+        data: { novelId, tag: tag.tag },
+      });
+    });
+
+    return {
+      message: 'تم اضافة التاجات بنجاح.',
+      statusCode: 201,
+    };
+  }
+
+  async deleteNovelTag(novelId: number, tag: string) {
+    const novel = await this.db.novel.findUnique({
+      where: { id: novelId },
+      select: { id: true },
+    });
+    if (!novel) throw new NotFoundException('هذه الروايه غير موجوده');
+
+    const findTag = await this.db.novelTag.findFirst({
+      where: { tag, novelId },
+    });
+
+    if (!findTag) throw new NotFoundException('هذا التاج غير موجود');
+    await this.db.novelTag.deleteMany({ where: { novelId, tag } });
+
+    return {
+      message: 'تم حذف التاج بنجاح.',
+      statusCode: 200,
     };
   }
 }
