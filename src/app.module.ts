@@ -9,7 +9,12 @@ import { PostsModule } from './posts/posts.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { UploadsModule } from './uploads/uploads.module';
 import { AppController } from './app.controller';
+import { MulterModule } from '@nestjs/platform-express';
 import { join } from 'path';
+import { AuthorsModule } from './authors/authors.module';
+import { FavouritesModule } from './favourites/favourites.module';
+import { TagsModule } from './tags/tags.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   controllers: [AppController],
@@ -25,6 +30,15 @@ import { join } from 'path';
     ChaptersModule,
     PostsModule,
     UploadsModule,
+    MulterModule.registerAsync({
+      useFactory: () => ({
+        dest: './public',
+      }),
+    }),
+    AuthorsModule,
+    FavouritesModule,
+    TagsModule,
+    CategoriesModule,
   ],
 })
 export class AppModule {}
