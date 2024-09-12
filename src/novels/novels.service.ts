@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateChapterDto } from 'src/chapters/dto';
 import { DatabaseService } from 'src/database/database.service';
 import { PaginationType } from 'types';
+import { createPagination } from 'utils/pagination';
 
 @Injectable()
 export class NovelsService {
@@ -10,6 +11,7 @@ export class NovelsService {
   async findNovel(novelId: number) {
     const novel = await this.db.novel.findUnique({
       where: { id: novelId },
+      include: { user: true, category: true, chapters: true },
     });
     if (!novel) throw new NotFoundException('هذه الرواية غير متواجده.');
     return { message: 'Novel Data', data: novel };
@@ -37,7 +39,24 @@ export class NovelsService {
     orderByParam,
     orderTypeParam,
   }: PaginationType) {
-    const novels = await this.db.novel.findMany();
+    const { orderBy, orderType, skip, limit } = createPagination(
+      pageParam,
+      limitParam,
+      orderByParam,
+      orderTypeParam,
+      skipLimitParam,
+    );
+
+    const novels = await this.db.novel.findMany({
+      where: {
+        title: {
+          contains: searchParam,
+        },
+      },
+      orderBy: { [orderBy]: orderType },
+      take: limit,
+      skip,
+    });
 
     return {
       message: 'Novel Data',
@@ -57,7 +76,25 @@ export class NovelsService {
       orderTypeParam,
     }: PaginationType,
   ) {
-    const novels = await this.db.novel.findMany();
+    const { orderBy, orderType, skip, limit } = createPagination(
+      pageParam,
+      limitParam,
+      orderByParam,
+      orderTypeParam,
+      skipLimitParam,
+    );
+
+    const novels = await this.db.novel.findMany({
+      where: {
+        title: {
+          contains: searchParam,
+        },
+        userId,
+      },
+      orderBy: { [orderBy]: orderType },
+      skip,
+      take: limit,
+    });
 
     return {
       message: 'Novel Data',
