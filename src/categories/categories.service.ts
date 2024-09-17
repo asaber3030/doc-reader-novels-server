@@ -7,7 +7,6 @@ import { DatabaseService } from 'src/database/database.service';
 import { PaginationType } from 'types';
 import { createPagination } from '../../utils/pagination';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto';
-import { novelsConfig } from 'src/novels/config';
 
 @Injectable()
 export class CategoriesService {
@@ -101,7 +100,6 @@ export class CategoriesService {
     const hasPreviousPage = pageParam > 1;
 
     const novels = await this.db.novel.findMany({
-      select: novelsConfig.select,
       where: {
         title: {
           contains: searchParam,

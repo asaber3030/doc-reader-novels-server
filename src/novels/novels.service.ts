@@ -67,7 +67,6 @@ export class NovelsService {
     const hasPreviousPage = pageParam > 1;
 
     const novels = await this.db.novel.findMany({
-      select: novelsConfig.select,
       where: {
         title: {
           contains: searchParam,
@@ -93,7 +92,6 @@ export class NovelsService {
 
   async getMostPopularNovels({ searchParam, limitParam }: PaginationType) {
     const novels = await this.db.novel.findMany({
-      select: novelsConfig.select,
       where: {
         title: {
           contains: searchParam,
@@ -135,7 +133,6 @@ export class NovelsService {
     const hasPreviousPage = pageParam > 1;
 
     const novels = await this.db.novel.findMany({
-      select: novelsConfig.select,
       where: {
         title: {
           contains: searchParam,
