@@ -22,20 +22,7 @@ export class AuthController {
   }
 
   @Post('/register')
-  @UseInterceptors(FileInterceptor('picture'))
-  register(
-    @Body() dto: RegisterDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 5_120_000_000 }),
-          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
-        ],
-      }),
-    )
-    picture: Express.Multer.File,
-  ) {
-    console.log(picture);
+  register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 }
