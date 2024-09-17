@@ -170,7 +170,7 @@ export class NovelsService {
           where: { novelId },
           orderBy: { id: 'desc' },
         })
-      )?.number ?? 1;
+      )?.number ?? 0;
 
     const nextChapterNumber = lastChapterNumber + 1;
 
