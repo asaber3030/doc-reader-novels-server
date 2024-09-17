@@ -14,7 +14,7 @@ model User {
   id              Int     @id @default(autoincrement())
   counts          Int     @default(0)
   name            String
-  picture         String  @default("https://docreader-novels.vercel.app/default-user.svg")
+  picture         String  @default("https://docreader-novels.vercel.app/user.png")
   username        String  @unique
   email           String  @unique
   followersCount  Int     @default(0)
