@@ -59,16 +59,6 @@ export class UserController {
     return this.userService.updateMe(user.id, data);
   }
 
-  @Post('update/picture')
-  @UseInterceptors(FileInterceptor('picture'))
-  async updatePicture(
-    @Req() req: Request,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    const user: User = req.user as User;
-    return await this.userService.createNovel(user.id, createNovelDto);
-  }
-
   @Post('follow')
   async follow(@Req() req: Request, @Body() data: FollowDto) {
     const user: User = req.user as User;

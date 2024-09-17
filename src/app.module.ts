@@ -18,10 +18,9 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { UploadsController } from './uploads/uploads.controller';
 
 import { join } from 'path';
-import { UserController } from './user/user.controller';
 
 @Module({
-  controllers: [AppController, UploadsController, UserController],
+  controllers: [AppController, UploadsController],
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ServeStaticModule.forRoot({
