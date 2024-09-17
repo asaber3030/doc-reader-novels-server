@@ -164,8 +164,18 @@ export class NovelsService {
     const novel = await this.db.novel.findUnique({ where: { id: novelId } });
     if (!novel) throw new NotFoundException('هذه الروايه غير موجوده');
 
+    const lastChapterNumber =
+      (
+        await this.db.chapter.findFirst({
+          where: { novelId },
+          orderBy: { id: 'desc' },
+        })
+      )?.number ?? 1;
+
+    const nextChapterNumber = lastChapterNumber + 1;
+
     const newChapter = await this.db.chapter.create({
-      data: { novelId, ...createChapterDto },
+      data: { novelId, ...createChapterDto, number: nextChapterNumber },
     });
 
     await this.db.novel.update({

@@ -6,6 +6,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { DatabaseService } from './database/database.service';
 
 @Controller()
 export class AppController {
