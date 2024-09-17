@@ -3,6 +3,7 @@ import {
   Controller,
   DefaultValuePipe,
   Get,
+  Param,
   ParseBoolPipe,
   ParseIntPipe,
   Query,
@@ -42,4 +43,7 @@ export class AuthorsController {
       limitParam,
     });
   }
+
+  @Get(':authorId')
+  async getAuthor(@Param('categoryId', ParseIntPipe) categoryId: number) {}
 }

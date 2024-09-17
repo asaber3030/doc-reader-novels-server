@@ -31,6 +31,7 @@ export class FavouritesService {
       where: {
         userId,
         novelId,
+        createdAt: new Date(),
       },
       select: { id: true },
     });

@@ -1,30 +1,22 @@
-import { PartialType } from "@nestjs/mapped-types"
-import { IsAlpha, IsNotEmpty, IsNumber, IsUrl, Length } from "class-validator"
+import { PartialType } from '@nestjs/mapped-types';
+import { IsNotEmpty, IsNumber, IsUrl, Length } from 'class-validator';
 
 export class CreateNovelDto {
   @IsNotEmpty()
   @Length(3, 255)
-  title: string
+  title: string;
 
   @IsNotEmpty()
   @Length(3)
-  description: string
-  
-  @IsNotEmpty()
-  @Length(3)
-  content: string
+  description: string;
 
   @IsNotEmpty()
   @IsUrl()
-  url: string
-
-  @IsNotEmpty()
-  @IsUrl()
-  image: string
+  image: string;
 
   @IsNotEmpty()
   @IsNumber()
-  categoryId: number
+  categoryId: number;
 }
 
 export class UpdateNovelDto extends PartialType(CreateNovelDto) {}

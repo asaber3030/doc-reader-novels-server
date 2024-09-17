@@ -11,6 +11,7 @@ import { DatabaseService } from 'src/database/database.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PaginationType } from 'types';
+import { createPagination } from '../../utils/pagination';
 
 @Injectable()
 export class UserService {
@@ -28,12 +29,49 @@ export class UserService {
     orderByParam,
     orderTypeParam,
   }: PaginationType) {
-    const users = await this.db.user.findMany({});
+    const { orderBy, orderType, skip, limit } = createPagination(
+      pageParam,
+      limitParam,
+      orderByParam,
+      orderTypeParam,
+      skipLimitParam,
+    );
+
+    const totalNovels = await this.db.novel.count();
+    const totalPages = Math.ceil(totalNovels / limitParam ?? 10);
+    const hasNextPage = pageParam < totalPages;
+    const hasPreviousPage = pageParam > 1;
+
+    const users = await this.db.user.findMany({
+      where: {
+        OR: [
+          {
+            name: {
+              contains: searchParam,
+            },
+          },
+          {
+            username: {
+              contains: searchParam,
+            },
+          },
+        ],
+      },
+      orderBy: { [orderBy]: orderType },
+      take: limit,
+      skip,
+    });
 
     return {
       message: 'Novel Data',
       statusCode: 200,
       data: users,
+      pagination: {
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+        page: pageParam,
+      },
     };
   }
 
@@ -233,6 +271,11 @@ export class UserService {
 
     const newNovel = await this.db.novel.create({
       data: { ...dto, userId },
+    });
+
+    await this.db.user.update({
+      where: { id: userId },
+      data: { novelsCount: { increment: 1 } },
     });
 
     return {

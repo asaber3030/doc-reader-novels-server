@@ -37,9 +37,6 @@ export class RegisterDto {
   @MinLength(8)
   @IsNotEmpty()
   password: string;
-
-  @IsOptional()
-  picture: any;
 }
 
 export class UpdateUserDto extends PartialType(RegisterDto) {}

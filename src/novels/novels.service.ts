@@ -168,6 +168,11 @@ export class NovelsService {
       data: { novelId, ...createChapterDto },
     });
 
+    await this.db.novel.update({
+      where: { id: novelId },
+      data: { chaptersCount: { increment: 1 } },
+    });
+
     return {
       message: 'تم اضافة فصل جديد.',
       statusCode: 201,

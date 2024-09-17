@@ -69,4 +69,20 @@ export class AuthorsService {
       data: authors,
     };
   }
+
+  async getAuthor(authorId: number) {
+    const author = await this.db.user.findUnique({
+      where: {
+        id: authorId,
+      },
+    });
+
+    const { password, ...data } = author;
+
+    return {
+      message: 'Message Data',
+      statusCode: 200,
+      data,
+    };
+  }
 }
