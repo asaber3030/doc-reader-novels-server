@@ -11,10 +11,6 @@ export class CreateNovelDto {
   description: string;
 
   @IsNotEmpty()
-  @IsUrl()
-  image: string;
-
-  @IsNotEmpty()
   @IsNumber()
   categoryId: number;
 }

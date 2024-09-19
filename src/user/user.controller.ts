@@ -20,13 +20,21 @@ import { Request } from 'express';
 import { UserService } from './user.service';
 import { CreateNovelDto, UpdateNovelDto } from './dto/novels.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { FollowDto, UpdateUserDto } from './dto/user.dto';
+import { ChangePasswordDto, FollowDto, UpdateUserDto } from './dto/user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ConfigService } from '@nestjs/config';
+
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { v4 } from 'uuid';
 
 @Controller('user')
 @UseGuards(AuthGuard('jwt'))
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private config: ConfigService,
+  ) {}
 
   @Get()
   async findUser(@Req() req: Request) {
@@ -54,9 +62,35 @@ export class UserController {
   }
 
   @Post('update')
-  async update(@Req() req: Request, @Body() data: UpdateUserDto) {
+  @UseInterceptors(
+    FileInterceptor('picture', {
+      storage: diskStorage({
+        destination: `./public/user-avatars`,
+        filename: (req, file, cb) => {
+          const uid = v4();
+          cb(null, `${uid}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  update(
+    @Req() req: Request,
+    @Body() data: UpdateUserDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     const user: User = req.user as User;
-    return this.userService.updateMe(user.id, data);
+    return this.userService.updateMe(
+      user.id,
+      data,
+      file,
+      this.config.get('APP_URL'),
+    );
+  }
+
+  @Post('change-password')
+  changePassword(@Req() req: Request, @Body() data: ChangePasswordDto) {
+    const user: User = req.user as User;
+    return this.userService.changePassword(user.id, data);
   }
 
   @Post('follow')
@@ -78,12 +112,29 @@ export class UserController {
   }
 
   @Post('novels/create')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: `./public/novel-images`,
+        filename: (req, file, cb) => {
+          const uid = v4();
+          cb(null, `${uid}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
   async createNovel(
     @Req() req: Request,
     @Body() createNovelDto: CreateNovelDto,
+    @UploadedFile() file: Express.Multer.File,
   ) {
     const user: User = req.user as User;
-    return await this.userService.createNovel(user.id, createNovelDto);
+    return await this.userService.createNovel(
+      user.id,
+      createNovelDto,
+      file,
+      this.config.get('APP_URL'),
+    );
   }
 
   @Get('novels/:novelId')

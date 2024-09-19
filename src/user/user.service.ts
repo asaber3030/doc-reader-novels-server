@@ -1,17 +1,21 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateNovelDto, UpdateNovelDto } from './dto/novels.dto';
-import { FollowDto, UpdateUserDto } from './dto/user.dto';
+import { ChangePasswordDto, FollowDto, UpdateUserDto } from './dto/user.dto';
 import { User } from '@prisma/client';
 import { DatabaseService } from 'src/database/database.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PaginationType } from 'types';
+
 import { createPagination } from '../../utils/pagination';
+
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
@@ -21,6 +25,7 @@ export class UserService {
     private config: ConfigService,
   ) {}
 
+  // Filtering users
   async allUsers({
     searchParam,
     pageParam,
@@ -75,7 +80,13 @@ export class UserService {
     };
   }
 
-  async updateMe(userId: number, data: UpdateUserDto) {
+  // Update User Details
+  async updateMe(
+    userId: number,
+    data: UpdateUserDto,
+    file: Express.Multer.File,
+    url: string,
+  ) {
     const isUsernameAvailable = await this.db.user.findUnique({
       where: {
         username: data.username,
@@ -96,9 +107,21 @@ export class UserService {
     if (isEmailAvailable)
       throw new ConflictException('البريد الالكتروني متواجد بالفعل.');
 
+    const userDefaultPicture = await this.db.user.findUnique({
+      where: { id: userId },
+      select: { picture: true },
+    });
+
+    const fileName = file
+      ? `${url}/${this.config.get('USER_IMAGES_PATH')}/${file.filename}`
+      : userDefaultPicture.picture;
+
     const updatedUser = await this.db.user.update({
       where: { id: userId },
-      data,
+      data: {
+        ...data,
+        picture: fileName,
+      },
     });
 
     const { password, ...user } = updatedUser;
@@ -115,6 +138,29 @@ export class UserService {
     };
   }
 
+  // Change Password
+  async changePassword(userId: number, data: ChangePasswordDto) {
+    const user = await this.db.user.findUnique({ where: { id: userId } });
+    const comparePassword = await bcrypt.compare(
+      data.currentPassword,
+      user.password,
+    );
+    if (!comparePassword) throw new UnauthorizedException('كلمة المرور خاطئة');
+
+    const hashedPassword = await bcrypt.hash(data.newPassword, 10);
+
+    await this.db.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return {
+      message: 'تم تغيير كلمة المرور بنجاح',
+      statusCode: 200,
+    };
+  }
+
+  // Create token
   async signToken(data: User): Promise<string> {
     const payload = {
       sub: data.id,
@@ -127,6 +173,7 @@ export class UserService {
     });
   }
 
+  // Current Loggined User
   async userNovels(user: User) {
     const novels = await this.db.novel.findMany({
       where: { userId: user.id },
@@ -138,6 +185,7 @@ export class UserService {
     };
   }
 
+  // Follow
   async follow(currentUser: User, data: FollowDto) {
     const user = await this.db.user.findUnique({
       where: { id: data.userId },
@@ -191,6 +239,7 @@ export class UserService {
     };
   }
 
+  // Unfollow User
   async unfollow(currentUser: User, data: FollowDto) {
     const user = await this.db.user.findUnique({
       where: { id: data.userId },
@@ -250,6 +299,7 @@ export class UserService {
     };
   }
 
+  // Get User Novel ID
   async getNovel(id: number) {
     const novel = await this.db.novel.findUnique({
       where: { id },
@@ -263,14 +313,24 @@ export class UserService {
     };
   }
 
-  async createNovel(userId: number, dto: CreateNovelDto) {
+  // Create Novel
+  async createNovel(
+    userId: number,
+    dto: CreateNovelDto,
+    file: Express.Multer.File,
+    url: string,
+  ) {
+    if (!file) throw new BadRequestException('يجب اضافة صورة للرواية!');
+
+    const fileName = `${url}/${this.config.get('USER_NOVEL_IMAGES_PATH')}/${file.filename}`;
+
     const findCategory = await this.db.category.findUnique({
       where: { id: dto.categoryId },
     });
     if (!findCategory) throw new NotFoundException('هذه القسم غير متواجد!');
 
     const newNovel = await this.db.novel.create({
-      data: { ...dto, userId },
+      data: { ...dto, userId, image: fileName },
     });
 
     await this.db.user.update({
@@ -285,6 +345,7 @@ export class UserService {
     };
   }
 
+  // Update Novel
   async updateNovel(userId: number, novelId: number, dto: UpdateNovelDto) {
     const novel = await this.db.novel.findUnique({
       where: { id: novelId },
@@ -305,6 +366,7 @@ export class UserService {
     };
   }
 
+  // Delete Novel
   async deleteNovel(userId: number, novelId: number) {
     const novel = await this.db.novel.findUnique({
       where: { id: novelId },
