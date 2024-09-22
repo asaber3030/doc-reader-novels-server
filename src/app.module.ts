@@ -11,7 +11,6 @@ import { AuthorsModule } from './authors/authors.module';
 import { FavouritesModule } from './favourites/favourites.module';
 import { TagsModule } from './tags/tags.module';
 import { CategoriesModule } from './categories/categories.module';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserService } from './user/user.service';
 import { DatabaseService } from './database/database.service';
@@ -20,18 +19,13 @@ import { JwtService } from '@nestjs/jwt';
 import { UserController } from './user/user.controller';
 
 import { join } from 'path';
+import { TestModule } from './test/test.module';
 
 @Module({
   controllers: [AppController, UserController],
   providers: [UserService, DatabaseService, JwtService, ConfigService],
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
-    }),
-    MulterModule.register({
-      dest: './public',
-    }),
     UserModule,
     AuthModule,
     DatabaseModule,
@@ -42,6 +36,7 @@ import { join } from 'path';
     FavouritesModule,
     TagsModule,
     CategoriesModule,
+    TestModule,
   ],
 })
 export class AppModule {}

@@ -24,10 +24,6 @@ import { ChangePasswordDto, FollowDto, UpdateUserDto } from './dto/user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { v4 } from 'uuid';
-
 @Controller('user')
 @UseGuards(AuthGuard('jwt'))
 export class UserController {
@@ -61,30 +57,15 @@ export class UserController {
     });
   }
 
+  @UseInterceptors(FileInterceptor('picture'))
   @Post('update')
-  @UseInterceptors(
-    FileInterceptor('picture', {
-      storage: diskStorage({
-        destination: `./public/user-avatars`,
-        filename: (req, file, cb) => {
-          const uid = v4();
-          cb(null, `${uid}${extname(file.originalname)}`);
-        },
-      }),
-    }),
-  )
   update(
     @Req() req: Request,
     @Body() data: UpdateUserDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() picture: Express.Multer.File,
   ) {
     const user: User = req.user as User;
-    return this.userService.updateMe(
-      user.id,
-      data,
-      file,
-      this.config.get('APP_URL'),
-    );
+    return this.userService.updateMe(user.id, data, picture);
   }
 
   @Post('change-password')
@@ -111,30 +92,15 @@ export class UserController {
     return await this.userService.userNovels(user);
   }
 
+  @UseInterceptors(FileInterceptor('image'))
   @Post('novels/create')
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: `./public/novel-images`,
-        filename: (req, file, cb) => {
-          const uid = v4();
-          cb(null, `${uid}${extname(file.originalname)}`);
-        },
-      }),
-    }),
-  )
   async createNovel(
     @Req() req: Request,
     @Body() createNovelDto: CreateNovelDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
     const user: User = req.user as User;
-    return await this.userService.createNovel(
-      user.id,
-      createNovelDto,
-      file,
-      this.config.get('APP_URL'),
-    );
+    return await this.userService.createNovel(user.id, createNovelDto, file);
   }
 
   @Get('novels/:novelId')

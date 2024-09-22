@@ -31,6 +31,7 @@
     "@nestjs/serve-static": "^4.0.2",
     "@nestjs/swagger": "^7.4.0",
     "@prisma/client": "^5.17.0",
+    "@supabase/supabase-js": "^2.45.4",
     "argon2": "^0.40.3",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",

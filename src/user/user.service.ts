@@ -8,14 +8,18 @@ import {
 import { CreateNovelDto, UpdateNovelDto } from './dto/novels.dto';
 import { ChangePasswordDto, FollowDto, UpdateUserDto } from './dto/user.dto';
 import { User } from '@prisma/client';
-import { DatabaseService } from 'src/database/database.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PaginationType } from 'types';
 
+import { DatabaseService } from 'src/database/database.service';
+
 import { createPagination } from '../../utils/pagination';
 
 import * as bcrypt from 'bcryptjs';
+import { v4 } from 'uuid';
+import { createClient } from '@supabase/supabase-js';
+import supabase from 'src/supabase';
 
 @Injectable()
 export class UserService {
@@ -85,42 +89,50 @@ export class UserService {
     userId: number,
     data: UpdateUserDto,
     file: Express.Multer.File,
-    url: string,
   ) {
-    const isUsernameAvailable = await this.db.user.findUnique({
-      where: {
-        username: data.username,
-        AND: [{ id: { not: userId } }],
-      },
-    });
+    if (data.username) {
+      const isUsernameAvailable = await this.db.user.findUnique({
+        where: {
+          username: data.username,
+          AND: [{ id: { not: userId } }],
+        },
+      });
 
-    if (isUsernameAvailable)
-      throw new ConflictException('اسم المستخدم متواجد بالفعل.');
+      if (isUsernameAvailable)
+        throw new ConflictException('اسم المستخدم متواجد بالفعل.');
+    }
 
-    const isEmailAvailable = await this.db.user.findUnique({
-      where: {
-        email: data.email,
-        AND: [{ id: { not: userId } }],
-      },
-    });
+    if (data.email) {
+      const isEmailAvailable = await this.db.user.findUnique({
+        where: {
+          email: data.email,
+          AND: [{ id: { not: userId } }],
+        },
+      });
 
-    if (isEmailAvailable)
-      throw new ConflictException('البريد الالكتروني متواجد بالفعل.');
+      if (isEmailAvailable)
+        throw new ConflictException('البريد الالكتروني متواجد بالفعل.');
+    }
 
     const userDefaultPicture = await this.db.user.findUnique({
       where: { id: userId },
       select: { picture: true },
     });
 
-    const fileName = file
-      ? `${url}/${this.config.get('USER_IMAGES_PATH')}/${file.filename}`
-      : userDefaultPicture.picture;
+    const fileName = v4() + '-' + file.originalname;
+
+    await supabase.storage.from('users').upload(fileName, file.buffer, {
+      upsert: true,
+      contentType: file.mimetype,
+    });
+
+    const url = supabase.storage.from('users').getPublicUrl(fileName);
 
     const updatedUser = await this.db.user.update({
       where: { id: userId },
       data: {
         ...data,
-        picture: fileName,
+        picture: file ? url.data.publicUrl : userDefaultPicture.picture,
       },
     });
 
@@ -318,11 +330,17 @@ export class UserService {
     userId: number,
     dto: CreateNovelDto,
     file: Express.Multer.File,
-    url: string,
   ) {
     if (!file) throw new BadRequestException('يجب اضافة صورة للرواية!');
 
-    const fileName = `${url}/${this.config.get('USER_NOVEL_IMAGES_PATH')}/${file.filename}`;
+    const fileName = v4() + '-' + file.originalname;
+
+    await supabase.storage.from('novels').upload(fileName, file.buffer, {
+      upsert: true,
+      contentType: file.mimetype,
+    });
+
+    const url = supabase.storage.from('novels').getPublicUrl(fileName);
 
     const findCategory = await this.db.category.findUnique({
       where: { id: dto.categoryId },
@@ -330,7 +348,12 @@ export class UserService {
     if (!findCategory) throw new NotFoundException('هذه القسم غير متواجد!');
 
     const newNovel = await this.db.novel.create({
-      data: { ...dto, userId, image: fileName },
+      data: {
+        ...dto,
+        userId,
+        image: url.data.publicUrl,
+        createdAt: new Date(),
+      },
     });
 
     await this.db.user.update({

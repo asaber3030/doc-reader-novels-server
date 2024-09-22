@@ -9,12 +9,15 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { NovelsService } from './novels.service';
 import { CreateChapterDto } from 'src/chapters/dto';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateManyNovelTagsDto, CreateNovelTagDto } from './dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('novels')
 @UseGuards(AuthGuard('jwt'))
