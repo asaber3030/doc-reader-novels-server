@@ -18,8 +18,7 @@ import { createPagination } from '../../utils/pagination';
 
 import * as bcrypt from 'bcryptjs';
 import { v4 } from 'uuid';
-import { createClient } from '@supabase/supabase-js';
-import supabase from 'src/supabase';
+import supabase from '../supabase';
 
 @Injectable()
 export class UserService {
