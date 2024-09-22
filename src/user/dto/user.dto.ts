@@ -1,7 +1,7 @@
 import { PartialType } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, MinLength } from 'class-validator';
 import { RegisterDto } from 'src/auth/dto';
-import { Match } from './match.decorator';
+import { Match } from './decorators';
 
 export class FollowDto {
   @IsNumber()

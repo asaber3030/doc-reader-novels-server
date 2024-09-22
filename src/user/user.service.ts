@@ -19,6 +19,7 @@ import { createPagination } from '../../utils/pagination';
 import * as bcrypt from 'bcryptjs';
 import { v4 } from 'uuid';
 import supabase from '../supabase';
+import { userConfig } from './dto/config';
 
 @Injectable()
 export class UserService {
@@ -27,6 +28,20 @@ export class UserService {
     private jwt: JwtService,
     private config: ConfigService,
   ) {}
+
+  // Get current user data
+  async findUser(userId: number) {
+    const user = await this.db.user.findUnique({
+      where: { id: userId },
+      select: userConfig.select,
+    });
+    if (!user) throw new UnauthorizedException('هذا المستخدم غير موجود');
+    return {
+      message: 'User data',
+      statusCode: 200,
+      data: user,
+    };
+  }
 
   // Filtering users
   async allUsers({
@@ -65,6 +80,7 @@ export class UserService {
           },
         ],
       },
+      select: userConfig.select,
       orderBy: { [orderBy]: orderType },
       take: limit,
       skip,
@@ -188,6 +204,9 @@ export class UserService {
   async userNovels(user: User) {
     const novels = await this.db.novel.findMany({
       where: { userId: user.id },
+      include: {
+        user: { select: { id: true, name: true, username: true } },
+      },
     });
     return {
       statusCode: 200,
@@ -368,7 +387,12 @@ export class UserService {
   }
 
   // Update Novel
-  async updateNovel(userId: number, novelId: number, dto: UpdateNovelDto) {
+  async updateNovel(
+    userId: number,
+    novelId: number,
+    dto: UpdateNovelDto,
+    file: Express.Multer.File,
+  ) {
     const novel = await this.db.novel.findUnique({
       where: { id: novelId },
     });
@@ -376,9 +400,26 @@ export class UserService {
     if (!novel) throw new NotFoundException('هذه الرواية غير موجوده');
     if (novel.userId !== userId) throw new UnauthorizedException();
 
+    let fileURL = novel.image;
+
+    if (file) {
+      const fileName = v4() + '-' + file.originalname;
+
+      await supabase.storage.from('novels').upload(fileName, file.buffer, {
+        upsert: true,
+        contentType: file.mimetype,
+      });
+
+      fileURL = supabase.storage.from('novels').getPublicUrl(fileName)
+        .data.publicUrl;
+    }
+
     const updatedNovel = await this.db.novel.update({
       where: { id: novelId },
-      data: dto,
+      data: {
+        ...dto,
+        image: fileURL,
+      },
     });
 
     return {

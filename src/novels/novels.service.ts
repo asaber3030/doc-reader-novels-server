@@ -9,6 +9,7 @@ import { PaginationType } from 'types';
 import { createPagination } from '../../utils/pagination';
 import { novelsConfig } from './config';
 import { CreateManyNovelTagsDto, CreateNovelTagDto } from './dto';
+import { userConfig } from 'src/user/dto/config';
 
 @Injectable()
 export class NovelsService {
@@ -18,7 +19,7 @@ export class NovelsService {
     const novel = await this.db.novel.findUnique({
       where: { id: novelId },
       include: {
-        user: { select: { name: true, username: true, id: true } },
+        user: { select: userConfig.select },
         category: true,
         chapters: true,
         tags: { select: { tag: true } },
@@ -72,6 +73,9 @@ export class NovelsService {
           contains: searchParam,
         },
       },
+      include: {
+        user: { select: { id: true, name: true, username: true } },
+      },
       orderBy: { [orderBy]: orderType },
       take: limit,
       skip,
@@ -96,6 +100,9 @@ export class NovelsService {
         title: {
           contains: searchParam,
         },
+      },
+      include: {
+        user: { select: { id: true, name: true, username: true } },
       },
       orderBy: { viewsCount: 'desc' },
       take: limitParam ?? 10,
@@ -138,6 +145,9 @@ export class NovelsService {
           contains: searchParam,
         },
         userId,
+      },
+      include: {
+        user: { select: { id: true, name: true, username: true } },
       },
       orderBy: { [orderBy]: orderType },
       skip,

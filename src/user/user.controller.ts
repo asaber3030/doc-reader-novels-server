@@ -14,6 +14,8 @@ import {
   ParseBoolPipe,
   UseInterceptors,
   UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
 } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { Request } from 'express';
@@ -23,6 +25,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ChangePasswordDto, FollowDto, UpdateUserDto } from './dto/user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
+import { getFileValidator } from './dto/decorators';
 
 @Controller('user')
 @UseGuards(AuthGuard('jwt'))
@@ -34,7 +37,8 @@ export class UserController {
 
   @Get()
   async findUser(@Req() req: Request) {
-    return { message: 'User data', statusCode: 200, data: req.user };
+    const user = req.user as User;
+    return this.userService.findUser(user.id as number);
   }
 
   @Get('all')
@@ -62,7 +66,19 @@ export class UserController {
   update(
     @Req() req: Request,
     @Body() data: UpdateUserDto,
-    @UploadedFile() picture: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({
+            maxSize: 1_048_576,
+            message: 'File size must be less than 1MB',
+          }),
+        ],
+        fileIsRequired: false,
+      }),
+      getFileValidator(),
+    )
+    picture: Express.Multer.File,
   ) {
     const user: User = req.user as User;
     return this.userService.updateMe(user.id, data, picture);
@@ -97,7 +113,18 @@ export class UserController {
   async createNovel(
     @Req() req: Request,
     @Body() createNovelDto: CreateNovelDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({
+            maxSize: 1_048_576,
+            message: 'File size must be less than 1MB',
+          }),
+        ],
+      }),
+      getFileValidator(),
+    )
+    file: Express.Multer.File,
   ) {
     const user: User = req.user as User;
     return await this.userService.createNovel(user.id, createNovelDto, file);
@@ -118,12 +145,31 @@ export class UserController {
   }
 
   @Patch('novels/:novelId/update')
+  @UseInterceptors(FileInterceptor('image'))
   async updateNovel(
     @Req() req: Request,
     @Param('novelId', ParseIntPipe) novelId: number,
     @Body() updateNovelDto: UpdateNovelDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({
+            maxSize: 1_048_576,
+            message: 'File size must be less than 1MB',
+          }),
+        ],
+        fileIsRequired: false,
+      }),
+      getFileValidator(),
+    )
+    file: Express.Multer.File,
   ) {
     const user: User = req.user as User;
-    return await this.userService.updateNovel(user.id, novelId, updateNovelDto);
+    return await this.userService.updateNovel(
+      user.id,
+      novelId,
+      updateNovelDto,
+      file,
+    );
   }
 }

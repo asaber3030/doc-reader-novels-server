@@ -6,7 +6,6 @@ import { NovelsModule } from './novels/novels.module';
 import { ChaptersModule } from './chapters/chapters.module';
 import { PostsModule } from './posts/posts.module';
 import { AppController } from './app.controller';
-import { MulterModule } from '@nestjs/platform-express';
 import { AuthorsModule } from './authors/authors.module';
 import { FavouritesModule } from './favourites/favourites.module';
 import { TagsModule } from './tags/tags.module';
@@ -17,9 +16,6 @@ import { DatabaseService } from './database/database.service';
 import { JwtService } from '@nestjs/jwt';
 
 import { UserController } from './user/user.controller';
-
-import { join } from 'path';
-import { TestModule } from './test/test.module';
 
 @Module({
   controllers: [AppController, UserController],
@@ -36,7 +32,6 @@ import { TestModule } from './test/test.module';
     FavouritesModule,
     TagsModule,
     CategoriesModule,
-    TestModule,
   ],
 })
 export class AppModule {}
